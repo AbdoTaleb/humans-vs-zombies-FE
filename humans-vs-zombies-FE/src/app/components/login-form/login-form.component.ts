@@ -1,44 +1,42 @@
 import { Component, EventEmitter, Output } from '@angular/core';
-import { LoginService } from 'src/app/services/login.service';
-import { NgForm } from '@angular/forms'
-import { User } from 'src/app/models/user.model';
 import { UserService } from 'src/app/services/user.service';
+import { KeycloakService } from 'keycloak-angular';
+import { KeycloakProfile } from 'keycloak-js';
 
 @Component({
   selector: 'app-login-form',
   templateUrl: './login-form.component.html',
-  styleUrls: ['./login-form.component.css']
+  styleUrls: ['./login-form.component.css'],
 })
 export class LoginFormComponent {
-
-  @Output() login: EventEmitter<void> = new EventEmitter();
-
   constructor(
-    private readonly loginService: LoginService,
+    private readonly keycloak: KeycloakService,
     private readonly userService: UserService
-    ) { }
+  ) {}
 
-  public loginSubmit(loginForm: NgForm): void {
+  public isLoggedIn = '';
+  public userProfile: KeycloakProfile | null = null;
 
-    const { username } = loginForm.value;
+  public async ngOnInit() {
+    this.isLoggedIn = await this.keycloak.getToken();
+    console.log(this.isLoggedIn);
 
-    console.log("User id: " + username);
+    if (this.isLoggedIn) {
+      this.userProfile = await this.keycloak.loadUserProfile();
+      console.log('hmm' + this.userProfile);
+    }
+  }
 
-    this.loginService.login(username)
-    .subscribe({
-      next: (user: User) => {
-        this.userService.user = user;
-        this.login.emit();
-      },
-      error: () => {
+  public login() {
+    this.keycloak.login();
+  }
 
-      }
-    })
+  public logout() {
+    this.keycloak.logout();
   }
 
   showModal = false;
   toggleModal() {
     this.showModal = !this.showModal;
   }
-
 }
